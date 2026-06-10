@@ -123,3 +123,47 @@ export const broadcast = createServerFn({ method: "POST" })
     }
     return { results };
   });
+
+export const listPosts = createServerFn({ method: "GET" }).handler(async () => {
+  const sb = await getAdmin();
+  const { data, error } = await sb.from("saved_posts").select("*").order("updated_at", { ascending: false });
+  if (error) throw new Error(error.message);
+  return data ?? [];
+});
+
+export const savePost = createServerFn({ method: "POST" })
+  .inputValidator((d: {
+    id?: string | null;
+    text: string;
+    imageBase64?: string | null;
+    buttonText?: string | null;
+    buttonUrl?: string | null;
+    buttonColor?: string | null;
+  }) => d)
+  .handler(async ({ data }) => {
+    const sb = await getAdmin();
+    const payload = {
+      text: data.text || "",
+      image_base64: data.imageBase64 || null,
+      button_text: data.buttonText || null,
+      button_url: data.buttonUrl || null,
+      button_color: data.buttonColor || null,
+    };
+    if (data.id) {
+      const { data: row, error } = await sb.from("saved_posts").update(payload).eq("id", data.id).select().single();
+      if (error) throw new Error(error.message);
+      return row;
+    }
+    const { data: row, error } = await sb.from("saved_posts").insert(payload).select().single();
+    if (error) throw new Error(error.message);
+    return row;
+  });
+
+export const deletePost = createServerFn({ method: "POST" })
+  .inputValidator((d: { id: string }) => d)
+  .handler(async ({ data }) => {
+    const sb = await getAdmin();
+    const { error } = await sb.from("saved_posts").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });

@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      saved_posts: {
+        Row: {
+          button_color: string | null
+          button_text: string | null
+          button_url: string | null
+          created_at: string
+          id: string
+          image_base64: string | null
+          text: string
+          updated_at: string
+        }
+        Insert: {
+          button_color?: string | null
+          button_text?: string | null
+          button_url?: string | null
+          created_at?: string
+          id?: string
+          image_base64?: string | null
+          text?: string
+          updated_at?: string
+        }
+        Update: {
+          button_color?: string | null
+          button_text?: string | null
+          button_url?: string | null
+          created_at?: string
+          id?: string
+          image_base64?: string | null
+          text?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       telegram_channels: {
         Row: {
           chat_id: string
