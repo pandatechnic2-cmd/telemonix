@@ -152,7 +152,7 @@ function Index() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0f172a] via-[#1e1b4b] to-[#0f172a] text-foreground pb-24">
       <Toaster position="top-center" richColors theme="dark" />
-      <Header me={me} mode={mode} onSwitchMode={(m) => modeMut.mutate(m)} />
+      <Header me={me} mode={mode} onSwitchMode={(m: any) => modeMut.mutate(m)} />
       <main className="max-w-2xl mx-auto px-4 pt-4">
         {isAdmin ? <AdminApp me={me} initData={initData} /> : mode === "publisher" ? <PublisherApp me={me} initData={initData} /> : <AdvertiserApp me={me} initData={initData} />}
       </main>
@@ -537,7 +537,7 @@ function ManageAds({ me, initData }: any) {
     onError: (e: any) => toast.error(e.message),
   });
   if (!campaigns.length) return <p className="text-sm text-muted-foreground text-center py-8">No campaigns yet. Create your first ad!</p>;
-  return <div className="space-y-3">{campaigns.map((c: any) => <CampaignCard key={c.id} c={c} onTopup={(v, cl) => topupMut.mutate({ id: c.id, views: v, clicks: cl })} />)}</div>;
+  return <div className="space-y-3">{campaigns.map((c: any) => <CampaignCard key={c.id} c={c} onTopup={(v: number, cl: number) => topupMut.mutate({ id: c.id, views: v, clicks: cl })} />)}</div>;
 }
 
 function CampaignCard({ c, onTopup, adminActions }: any) {
