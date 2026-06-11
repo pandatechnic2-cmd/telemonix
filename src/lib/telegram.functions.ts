@@ -516,7 +516,7 @@ export const distributeAds = createServerFn({ method: "POST" })
     for (const c of campaigns) {
       // Find matching channels not already posted to today (any time-since-last check kept simple)
       const { data: channels } = await sb.from("telegram_channels")
-        .select("*").eq("status", "active").eq("category_id", c.category_id);
+        .select("*").eq("status", "active").eq("category_id", c.category_id || "");
       if (!channels?.length) continue;
 
       const { data: existing } = await sb.from("ad_placements").select("channel_id, sent_at").eq("campaign_id", c.id);
