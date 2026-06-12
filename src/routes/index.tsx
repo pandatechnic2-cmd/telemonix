@@ -525,9 +525,13 @@ function CreateAdForm({ me, initData }: any) {
             <div><Label className="text-xs">Target views (min {me.settings.min_views})</Label><Input type="number" value={targetViews} onChange={(e) => setTargetViews(+e.target.value)} className="bg-white/5 border-white/10" /></div>
             <div><Label className="text-xs">Target clicks (min {me.settings.min_clicks})</Label><Input type="number" value={targetClicks} onChange={(e) => setTargetClicks(+e.target.value)} className="bg-white/5 border-white/10" /></div>
           </div>
-          <div className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10">
-            <div className="flex items-center gap-2"><Switch checked={watermark} onCheckedChange={setWatermark} /><span className="text-sm">TeleMonix watermark</span></div>
-            <span className="text-[10px] text-muted-foreground">@{me.bot_username}</span>
+          <div className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10 opacity-70">
+            <div className="flex items-center gap-2"><Switch checked={true} disabled /><span className="text-sm">TeleMonix watermark</span></div>
+            <span className="text-[10px] text-muted-foreground">Required on ads</span>
+          </div>
+          <div>
+            <Label className="text-xs mb-1.5 block">Live preview</Label>
+            <PostPreview text={text} imageBase64={imageBase64} buttonText={buttonText} watermark={true} botUsername={me.bot_username} />
           </div>
           <div className="rounded-lg p-3 bg-gradient-to-r from-purple-500/15 to-cyan-500/15 border border-white/10 flex items-center justify-between">
             <div><p className="text-xs text-muted-foreground">Total cost</p><p className="text-2xl font-bold">${cost.toFixed(2)}</p></div>
@@ -539,6 +543,7 @@ function CreateAdForm({ me, initData }: any) {
     </>
   );
 }
+
 
 function ManageAds({ me, initData }: any) {
   const listFn = useServerFn(listCampaigns);
