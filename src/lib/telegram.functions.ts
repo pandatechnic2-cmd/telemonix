@@ -5,6 +5,21 @@ const TG_API = "https://api.telegram.org";
 const ADMIN_ID = 5419054691;
 const BOT_USERNAME = "teleMonix_bot";
 const WATERMARK = `\n\n— via @${BOT_USERNAME} · Monetize your Telegram channel`;
+const URL_RE = /(https?:\/\/[^\s<]+)/gi;
+
+// Replace every http(s) URL in `text` with `${origin}/api/public/t/<id>?u=...&src=link&to=<url>`.
+// Returns rewritten text + mapping (original url → tracker url).
+function rewriteLinks(text: string, origin: string, trackerId: string, source: "post" | "ad"): { text: string; map: Record<string, string> } {
+  if (!text || !origin) return { text: text || "", map: {} };
+  const map: Record<string, string> = {};
+  const out = text.replace(URL_RE, (orig) => {
+    const tracker = `${origin}/api/public/t/${trackerId}?p=${source}&src=link&to=${encodeURIComponent(orig)}`;
+    map[orig] = tracker;
+    return tracker;
+  });
+  return { text: out, map };
+}
+
 
 function token() {
   const t = process.env.TELEGRAM_BOT_TOKEN;
