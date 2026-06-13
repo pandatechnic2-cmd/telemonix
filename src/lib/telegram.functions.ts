@@ -764,3 +764,70 @@ export async function notifyBotRemoved(ownerId: number, channelTitle: string) {
     });
   } catch {}
 }
+
+// =============== Smart CTA suggest (AI) ===============
+export const suggestCTA = createServerFn({ method: "POST" })
+  .inputValidator((d: { text: string }) => d)
+  .handler(async ({ data }) => {
+    const presets = ["🎁 Get Reward","📝 Register Here","🔥 Join Now","🌐 Open Website","👀 View Channel","📥 Download App","🚀 Start Earning","💰 Claim Bonus","🎯 Learn More"];
+    const key = process.env.LOVABLE_API_KEY;
+    if (!key || !data.text) return { suggestion: presets[0], options: presets };
+    try {
+      const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Lovable-API-Key": key },
+        body: JSON.stringify({
+          model: "google/gemini-3-flash-preview",
+          messages: [
+            { role: "system", content: `Pick the single best CTA button label for the ad text. Choose ONLY from this list and reply with the exact label, nothing else:\n${presets.join("\n")}` },
+            { role: "user", content: data.text.slice(0, 800) },
+          ],
+        }),
+      });
+      const j = await res.json();
+      const out = (j.choices?.[0]?.message?.content || "").trim();
+      const match = presets.find(p => out.includes(p)) || presets[0];
+      return { suggestion: match, options: presets };
+    } catch {
+      return { suggestion: presets[0], options: presets };
+    }
+  });
+
+// =============== Saved-post stats (aggregated views/clicks across channels) ===============
+export const listSavedPostStats = createServerFn({ method: "POST" })
+  .inputValidator((d: { initData?: string; devUid?: number }) => d)
+  .handler(async ({ data }) => {
+    const { user } = resolveUser(data.initData, data.devUid);
+    if (user.id !== ADMIN_ID) throw new Error("Forbidden");
+    const sb = await getAdmin();
+    const { data: posts } = await sb.from("saved_posts").select("*").order("updated_at", { ascending: false });
+    if (!posts?.length) return [];
+    const ids = posts.map((p: any) => p.id);
+    const { data: msgs } = await sb.from("sent_messages").select("saved_post_id, views, clicks, unique_clicks, channel_id").in("saved_post_id", ids);
+    const agg: Record<string, { views: number; clicks: number; unique: number; channels: number }> = {};
+    (msgs ?? []).forEach((m: any) => {
+      if (!m.saved_post_id) return;
+      const a = agg[m.saved_post_id] ||= { views: 0, clicks: 0, unique: 0, channels: 0 };
+      a.views += m.views || 0; a.clicks += m.clicks || 0; a.unique += m.unique_clicks || 0; a.channels += 1;
+    });
+    return posts.map((p: any) => ({ ...p, stats: agg[p.id] || { views: 0, clicks: 0, unique: 0, channels: 0 } }));
+  });
+
+// =============== Delete saved post EVERYWHERE (DB + Telegram channels) ===============
+export const deleteSavedPostEverywhere = createServerFn({ method: "POST" })
+  .inputValidator((d: { id: string; initData?: string; devUid?: number }) => d)
+  .handler(async ({ data }) => {
+    const { user } = resolveUser(data.initData, data.devUid);
+    if (user.id !== ADMIN_ID) throw new Error("Forbidden");
+    const sb = await getAdmin();
+    const { data: msgs } = await sb.from("sent_messages").select("id, chat_id, message_id").eq("saved_post_id", data.id);
+    let deleted = 0;
+    for (const m of msgs ?? []) {
+      if (m.message_id) {
+        try { const r = await tg("deleteMessage", { chat_id: m.chat_id, message_id: m.message_id }); if (r.ok) deleted++; } catch {}
+      }
+    }
+    await sb.from("sent_messages").delete().eq("saved_post_id", data.id);
+    await sb.from("saved_posts").delete().eq("id", data.id);
+    return { ok: true, deleted };
+  });
