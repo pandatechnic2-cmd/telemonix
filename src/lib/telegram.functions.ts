@@ -453,6 +453,7 @@ export const broadcast = createServerFn({ method: "POST" })
           chat_id: ch.chat_id, text: data.text || null,
           button_url: data.buttonUrl || null,
           watermark, cpm_usd: cpm, cpc_usd: cpc,
+          saved_post_id: data.savedPostId || null,
         }).select().single();
         if (insErr || !ins) throw new Error(insErr?.message || "DB insert failed");
         preRow = ins;
@@ -460,10 +461,10 @@ export const broadcast = createServerFn({ method: "POST" })
         const trackerId = ins.id;
         const baseText = (data.text || "") + (watermark ? WATERMARK : "");
         const { text: rewrittenText, map: linkMap } = origin
-          ? rewriteLinks(baseText, origin, trackerId, "post")
+          ? await rewriteLinks(baseText, origin, trackerId, "post")
           : { text: baseText, map: {} as Record<string, string> };
         const buttonTracker = (origin && data.buttonText && data.buttonUrl)
-          ? `${origin}/api/public/t/${trackerId}?p=post&src=button`
+          ? await makeShortLink("post", trackerId, "button", data.buttonUrl, origin)
           : (data.buttonUrl || null);
         await sb.from("sent_messages").update({ link_map: linkMap }).eq("id", trackerId);
 
